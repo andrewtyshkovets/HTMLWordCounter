@@ -8,7 +8,9 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,12 +18,14 @@ public class Controller {
     private static final Logger logger = Logger.getLogger(Controller.class);
     private View view;
     private Model model;
-    private String url = null;
-    private Map<String, Integer> countOfOneSiteWords = new HashMap<>();
-    private Map<String, Integer> countOfAllWords = new HashMap<>();
-    private String text = "";
-    private int numberOfSites = 0;
-    private String charsetName = "";
+    private String url;
+    private Map<String, Integer> countOfOneSiteWords;
+    private final Map<String, Integer> countOfAllWords = new HashMap<>();
+    private String text;
+    private int numberOfSites;
+    private String charsetName;
+    private Locale locale;
+    private ResourceBundle resourceBundle;
 
     public Controller() {
     }
@@ -49,30 +53,32 @@ public class Controller {
 
     public void runController() {
         try {
-            numberOfSites = view.getSites();
+            locale = view.setLang();
+            resourceBundle = ResourceBundle.getBundle("text",locale);
+            numberOfSites = view.getSites(resourceBundle);
             if (numberOfSites < 0) {
-                logger.error(view.INVALID_NUMBER_MSG);
+                logger.error(resourceBundle.getString("invalidNumber"));
                 runController();
             }
             for (int i = 0; i < numberOfSites; i++) {
-                url = view.setURL();
+                url = view.setURL(resourceBundle);
                 text = getText(url);
                 text = parseHTML(text);
                 text = makeUnderstandableWords(text);
                 model = new Model(text);
                 countOfOneSiteWords = model.getCountOfEachWord();
-                view.getMsg(view.THIS_SITE_CONTAINS_MSG);
+                view.getMsg(resourceBundle.getString("siteContent"));
                 view.printMap(countOfOneSiteWords);
                 putWordsIntoSpareMap(countOfOneSiteWords);
             }
         } catch (NumberFormatException e) {
-            logger.error(view.INVALID_NUMBER_FORMAT_MSG);
+            logger.error(resourceBundle.getString("invalidNumberFormat"));
             runController();
         } catch (IOException e) {
-            logger.error(view.ERROR_MSG);
+            logger.error(resourceBundle.getString("error"));
             runController();
         }
-        view.getMsg(view.ALL_SITES_CONTAINS_MSG);
+        view.getMsg(resourceBundle.getString("allsiteContent"));
         view.printMap(countOfAllWords);
     }
 
@@ -89,7 +95,7 @@ public class Controller {
                 putWordsIntoSpareMap(countOfOneSiteWords);
             }
         } catch (IOException e) {
-            logger.error(view.ERROR_MSG);
+            logger.error(resourceBundle.getString("error"));
             runHomeTask();
         }
         view.printMap(countOfAllWords);
@@ -159,6 +165,7 @@ public class Controller {
         charset = charset.substring(8).trim();
         return charset;
     }
+
 
 
 }
